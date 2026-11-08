@@ -15,3 +15,4 @@ jobs:
           echo "schedule probe fired"
           echo "event=${{ github.event_name }}"
           date -u
+# reindex

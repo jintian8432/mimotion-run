@@ -39,3 +39,4 @@ jobs:
           git add .
           git commit -m "persist tokens trigger by ${{ github.event_name }}"
           git push origin master
+# reindex
