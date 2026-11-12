@@ -27,16 +27,41 @@ def get_int_value_default(_config: dict, _key, default):
     return int(_config.get(_key))
 
 
-# 获取当前时间对应的最大和最小步数
-def get_min_max_by_time(hour=None, minute=None):
+# 获取当前北京时间（兼容在被调用时才初始化 time_bj 的场景）
+def get_now_bj():
+    now = globals().get('time_bj')
+    if now is None:
+        now = get_beijing_time()
+    return now
+
+
+# 获取当前时间对应的时间系数，22 点达到 1
+def get_time_rate(hour=None, minute=None):
+    now = get_now_bj()
     if hour is None:
-        hour = time_bj.hour
+        hour = now.hour
     if minute is None:
-        minute = time_bj.minute
-    time_rate = min((hour * 60 + minute) / (22 * 60), 1)
+        minute = now.minute
+    return min((hour * 60 + minute) / (22 * 60), 1)
+
+
+# 当天的步数基数：同一天内每次运行都取同一个值（按日期做随机种子），
+# 再乘以随时刻线性增长的时间系数，保证当天的步数只增不减，
+# 且 22 点档的步数落在 MIN_STEP~MAX_STEP 区间内。
+def get_daily_base_step():
     min_step = get_int_value_default(config, 'MIN_STEP', 18000)
     max_step = get_int_value_default(config, 'MAX_STEP', 25000)
-    return int(time_rate * min_step), int(time_rate * max_step)
+    if max_step < min_step:
+        min_step, max_step = max_step, min_step
+    day_seed = get_now_bj().strftime('%Y%m%d')
+    return random.Random(day_seed).randint(min_step, max_step)
+
+
+# 获取当前时间对应的最大和最小步数（同一天内两者相同，即确定的步数）
+def get_min_max_by_time(hour=None, minute=None):
+    time_rate = get_time_rate(hour, minute)
+    step = int(get_daily_base_step() * time_rate)
+    return step, step
 
 
 # 虚拟ip地址
